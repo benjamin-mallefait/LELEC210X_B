@@ -55,6 +55,8 @@ if __name__ == "__main__":
     args = argParser.parse_args()
     print("uart-reader launched...\n")
 
+    #argParser.add_argument("-f", "--fourier",action='store_true', help="For the part 2, plot the Fourier Transform. Launch this script with [-f]")
+   
     if args.port is None:
         print(
             "No port specified, here is a list of serial communication port available"
@@ -79,14 +81,48 @@ if __name__ == "__main__":
             voltage_mV = msg * VDD / VAL_MAX_ADC * 1e3
 
             plt.plot(times, voltage_mV)
-            plt.title("Acquisition #{}".format(msg_counter))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Voltage (mV)")
-            plt.ylim([0, 3300])
-            plt.draw()
-            plt.pause(0.001)
-            plt.cla()
+            plt.title('Acquisition #{}'.format(msg_counter))
+            plt.xlabel('Time (s)')
+            plt.ylabel('Voltage (mV)')
+            plt.ylim([0,3300])
+            plt.savefig("audio_files/Acquisition #{}.pdf".format(msg_counter), format="pdf")
+            #plt.draw()
+            #plt.pause(0.001)
+            plt.clf()
+            
+            
+            generate_audio(msg, 'acq-{}'.format(msg_counter))
+            
+#             #if args.fourier:
+#             # Effectuez la transformation de Fourier
+#             freqs = np.fft.fftfreq(buffer_size, 1 / FREQ_SAMPLING)
+#             fft_values = np.fft.fft(msg)
+#             
+#             # Calculez la magnitude du spectre
+#             magnitude = np.abs(fft_values)
+#             
+#             # Trouvez les fréquences positives (la moitié du spectre)
+#             positive_freqs = freqs[:buffer_size // 2]
+#             magnitude = magnitude[:buffer_size // 2]
+#             
+#             # Tracer le graphique de la transformée de Fourier
+#             plt.plot(positive_freqs, magnitude)
+#             plt.title('FFT of Acquisition #{}'.format(msg_counter))
+#             plt.yscale('log')
+#             #plt.xscale('log')
+#             plt.xlabel('Frequency (Hz)')
+#             plt.ylabel('Magnitude')
+#             plt.grid()
+#             plt.savefig("audio_files/Acquisition #{} Fourier.pdf".format(msg_counter), format="pdf")
+#             #plt.show()
+#             plt.clf()
+            msg_counter+=1
+            
+            
+            print("")
+            print("Data save in audio_files")
+            print("")
 
-            generate_audio(msg, "acq-{}".format(msg_counter))
 
-            msg_counter += 1
+
+                

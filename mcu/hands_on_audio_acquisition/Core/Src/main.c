@@ -19,7 +19,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "dma.h"
 #include "usart.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -35,8 +38,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ADC_BUF_SIZE 256
+#define ADC_BUF_SIZE 10000
 /* USER CODE END PD */
+
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
@@ -52,6 +56,8 @@ volatile uint16_t* ADCData1;
 volatile uint16_t* ADCData2;
 
 char hex_encoded_buffer[4*ADC_BUF_SIZE+1];
+
+volatile int tresh;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,15 +66,77 @@ void SystemClock_Config(void);
 void hex_encode(char* s, const uint8_t* buf, size_t len);
 void print_buffer(uint16_t *buffer);
 uint32_t get_signal_power(uint16_t *buffer, size_t len);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	/*
 	if (GPIO_Pin == B1_Pin) {
-		state = 1-state;
+		HAL_ADC_Start(&hadc1);
+		int ret = HAL_ADC_PollForConversion(&hadc1,0xFFFF);
+		if (ret == HAL_OK){
+			uint32_t val = HAL_ADC_GetValue(&hadc1);
+			printf("val is %d:", val);
+		}
+		else printf("error\n");
+		HAL_ADC_Stop(&hadc1);
+	}
+	*/
+	if (GPIO_Pin == B1_Pin) {
+			HAL_TIM_Base_Start(&htim3);
+			HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADCBuffer, ADC_BUF_SIZE);
+		}
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
+	HAL_TIM_Base_Stop(&htim3);
+	HAL_ADC_Stop_DMA(&hadc1);
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+	print_buffer(ADCBuffer);
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+}
+/*
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
+	printf("Enter 2\n");
+
+	//print_buffer(ADCBuffer); // for a graph (step 2)
+	uint32_t power = get_signal_power(ADCData2, ADC_BUF_SIZE);
+	printf("Signal power = %ld \n", power);
+	if (power > tresh){
+		state = 1;
+		printf("Exit 2\n");
+	}
+	if (state){
+		HAL_TIM_Base_Stop(&htim3);
+		HAL_ADC_Stop_DMA(&hadc1);
+		print_buffer(ADCBuffer);
+		state = 0;
 	}
 }
+
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc){
+	printf("Enter 1\n");
+
+	// For the R2 report:
+
+	uint32_t power = get_signal_power(ADCData1, ADC_BUF_SIZE);
+	printf("Signal power = %ld \n", power);
+	if (power > tresh){
+		state = 1;
+		printf("Exit 1\n");
+	}
+	if (state){
+			HAL_TIM_Base_Stop(&htim3);
+			HAL_ADC_Stop_DMA(&hadc1);
+			print_buffer(ADCBuffer);
+			state = 0;
+		}
+}
+*/
+
+
 
 void hex_encode(char* s, const uint8_t* buf, size_t len) {
     s[2*len] = '\0'; // A string terminated by a zero char.
@@ -122,10 +190,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_LPUART1_UART_Init();
+  MX_ADC1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   RetargetInit(&hlpuart1);
-  printf("Hello world!\r\n");
+  printf("Hello from Dorian!\r\n");
+  tresh = 100000;
   state=0;
   ADCData1 = &ADCBuffer[0];
   ADCData2 = &ADCBuffer[ADC_BUF_SIZE];
@@ -135,10 +207,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+	/*HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_Delay(500);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 	HAL_Delay(500);
+	*/
+	__WFI();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
