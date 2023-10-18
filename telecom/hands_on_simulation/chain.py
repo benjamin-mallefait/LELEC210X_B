@@ -113,7 +113,7 @@ class Chain:
         Demodulates the received signal.
 
         :param y: The received signal, (N * R,).
-        :return: The signal, after demodulation.
+        :return x: The signal, after demodulation.
         """
         raise NotImplementedError
 
@@ -194,6 +194,21 @@ class BasicChain(Chain):
 
         # TO DO: performs the decision based on r0 and r1
 
-        bits_hat = np.zeros(nb_syms, dtype=int)  # Default value, all bits=0. TO CHANGE!
-
-        return bits_hat
+        fd = self.freq_dev # Frequency deviation, Delta_f
+        B = self.bit_rate # B=1/T
+        h = 2 * fd / B # Modulation index
+        
+        x = np.zeros(nb_syms, dtype=np.complex64)
+        for k in range(len(y)-1):
+            r1 = 0
+            r0 = 0
+            for n in range(R-1):
+                r1 += y[k, n]*np.exp(-1j*h*np.pi * n/(B*R))
+                r0 += y[k, n]*np.exp(1j*h*np.pi * n/(B*R))
+            r1 *= (1/R)
+            r0 *= (1/R)
+            if np.abs(r1) > np.abs(r0):
+                x[k] = 1
+            else:
+                x[k] = 0
+        return np.real(x)
