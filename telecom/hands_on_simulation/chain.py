@@ -1,4 +1,5 @@
 from typing import Optional
+import matplotlib.pyplot as plt
 
 import numpy as np
 
@@ -146,11 +147,25 @@ class BasicChain(Chain):
         Estimates CFO using Moose algorithm, on first samples of preamble.
         """
         # TO DO: extract 2 blocks of size N*R at the start of y
+        R = self.osr_rx
+        N = 2
+        N_t = R * N
+        T = 1/self.bit_rate
+
+        y_2 = y[N_t:2*N_t]
+        y_1 = y[:N_t]
+
+        #plt.plot(np.arange(len(y_1)), y_1)
+        #plt.plot(np.arange(len(y_2)), y_2)
+
+        #plt.show()
+
+        Num = np.angle(np.sum(y_2 * np.conj(y_1)))
+        Den = (2*np.pi*(N_t * T)/R)
+
+        cfo_est = Num / Den
 
         # TO DO: apply the Moose algorithm on these two blocks to estimate the CFO
-
-        cfo_est = 0  # Default value, to change
-
         return cfo_est
 
     bypass_sto_estimation = True

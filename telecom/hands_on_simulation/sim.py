@@ -159,6 +159,7 @@ def run_sim(chain):
                 else:
                     cfo_hat = chain.cfo_estimation(y_detect)
 
+                print(str(cfo_hat) + " vs " + str(cfo))
                 t = np.arange(len(y_detect)) / (B * R)
                 y_sync = np.exp(-1j * 2 * np.pi * cfo_hat * t) * y_detect
 
