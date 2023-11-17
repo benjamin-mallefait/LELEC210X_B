@@ -119,6 +119,7 @@ module dual_running_sum #(
 	reg  short_to_long_arrived;
 	reg  short_shift_full;
 	
+	reg [(LONG_SUM_WIDTH + 7):0] long_shift_rescale_reg;
 
 	wire [15:0] short_altshift_taps;
 	wire [15:0]  long_altshift_taps;
@@ -184,19 +185,23 @@ module dual_running_sum #(
 		if (reset | clear_rs) begin
 			long_sum_reg        <= 'b0;		// We clear the sum on a system reset or on a clear request from GNU Radio
 			long_counter 		<= 'b0;
+			long_shift_rescale_reg <= 'b0;  // Réinitialiser le registre de résultat de multiplication
+
 		end
 		else if (enable & short_shift_full) begin
 			long_sum_reg  <= long_sum_reg  + short_shift_out -  long_shift_out; // Accumulated long term value : we add the most recent sample energy and remove the oldest one
+			long_shift_rescale_reg <= (long_sum_reg * K) >> 3; // Effectuer la multiplication et le décalage
 
 			if (!long_shift_full)
 				long_counter       <= long_counter + 1;
+				
 		end
 	end
 	
 	
 	wire  [(LONG_SUM_WIDTH+8 -1):0] long_shift_rescale;
-	
-	assign long_shift_rescale  = long_sum_reg ;
+
+	assign long_shift_rescale  = long_shift_rescale_reg; // TO DO 
 
 	assign long_shift_full = (long_counter==LONG_SHIFT_LEN);
 	
